@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rook Republic Calendar</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 10px;
+        background: #0785b0;
+        color: white;
+        font-family: Arial, sans-serif;
+    }
+
+    .calendar {
+        max-width: 700px;
+        margin: auto;
+    }
+
+    .calendar-header {
+        border: 2px solid #35e68a;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .calendar-title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .calendar-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    button {
+        background: #0785b0;
+        color: white;
+        border: 1px solid #35e68a;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    button:hover {
+        background: #08779b;
+    }
+
+    .month-name {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .weekdays,
+    .days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+    }
+
+    .weekday {
+        text-align: center;
+        font-weight: bold;
+        padding: 6px 2px;
+        font-size: 13px;
+    }
+
+    .day {
+        min-height: 65px;
+        border: 1px solid #35d9e6;
+        border-radius: 6px;
+        padding: 5px;
+        cursor: pointer;
+        background: #0785b0;
+        transition: background 0.15s;
+    }
+
+    .day:hover {
+        background: #087b9f;
+    }
+
+    .day.empty {
+        border: none;
+        cursor: default;
+        background: transparent;
+    }
+
+    .day-number {
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .today {
+        border: 2px solid #35e68a;
+    }
+
+    .event-dot {
+        display: block;
+        font-size: 11px;
+        margin-top: 5px;
+        line-height: 1.2;
+    }
+
+    .event-panel {
+        display: none;
+        border: 2px solid #35d9e6;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+        background: #0785b0;
+    }
+
+    .event-panel.active {
+        display: block;
+    }
+
+    .event-date {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .event {
+        border-left: 3px solid #35e68a;
+        padding: 5px 8px;
+        margin: 6px 0;
+    }
+
+    .event-title {
+        font-weight: bold;
+    }
+
+    .event-time {
+        color: #b9e6e6;
+        font-size: 14px;
+        margin-top: 2px;
+    }
+
+    .no-events {
+        color: #c8e3e8;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="calendar">
+
+    <div class="calendar-header">
+
+        <div class="calendar-title">
+            ♜ THE ROOK REPUBLIC CALENDAR ♜
+        </div>
+
+        <div class="calendar-controls">
+            <button onclick="changeMonth(-1)">‹ Previous</button>
+
+            <div id="monthName" class="month-name"></div>
+
+            <button onclick="changeMonth(1)">Next ›</button>
+        </div>
+
+    </div>
+
+    <div class="weekdays">
+        <div class="weekday">Sun</div>
+        <div class="weekday">Mon</div>
+        <div class="weekday">Tue</div>
+        <div class="weekday">Wed</div>
+        <div class="weekday">Thu</div>
+        <div class="weekday">Fri</div>
+        <div class="weekday">Sat</div>
+    </div>
+
+    <div id="days" class="days"></div>
+
+    <div id="eventPanel" class="event-panel"></div>
+
+</div>
+
+
+<script>
+
+let currentDate = new Date();
+
+
+/*
+    ========================================
+    REPUBLIC RECURRING EVENTS
+    ========================================
+*/
+
+const recurringEvents = {
+
+    5: [
+        {
+            title: "🧩 Puzzle Friday",
+            time: "All day"
+        }
+    ],
+
+    6: [
+        {
+            title: "📖 Opening Academy Saturday",
+            time: "All day"
+        },
+        {
+            title: "♟ Saturday Knight Swiss",
+            time: "7:00 PM CST"
+        }
+    ],
+
+    0: [
+        {
+            title: "⚔️ Tactics and Endgame Sunday",
+            time: "All day"
+        }
+    ]
+
+};
+
+
+/*
+    ========================================
+    SPECIAL EVENTS
+    ========================================
+
+    We'll use this later for things such as:
+
+    "50 Members Celebration"
+    "Republic Anniversary"
+    "Special Vote Chess"
+    etc.
+
+*/
+
+const specialEvents = {
+
+};
+
+
+/*
+    ========================================
+    BUILD CALENDAR
+    ========================================
+*/
+
+function buildCalendar() {
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const firstWeekday = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const monthName = document.getElementById("monthName");
+    const days = document.getElementById("days");
+
+    monthName.textContent =
+        firstDay.toLocaleString("en-US", {
+            month: "long",
+            year: "numeric"
+        });
+
+    days.innerHTML = "";
+
+    /*
+        Empty spaces before the first day
+    */
+
+    for (let i = 0; i < firstWeekday; i++) {
+
+        const empty = document.createElement("div");
+
+        empty.className = "day empty";
+
+        days.appendChild(empty);
+
+    }
+
+
+    /*
+        Generate every day
+    */
+
+    for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
+
+        const date = new Date(year, month, dayNumber);
+
+        const cell = document.createElement("div");
+
+        cell.className = "day";
+
+
+        /*
+            Highlight today
+        */
+
+        const today = new Date();
+
+        if (
+            date.getFullYear() === today.getFullYear() &&
+            date.getMonth() === today.getMonth() &&
+            date.getDate() === today.getDate()
+        ) {
+
+            cell.classList.add("today");
+
+        }
+
+
+        /*
+            Date number
+        */
+
+        const number = document.createElement("div");
+
+        number.className = "day-number";
+
+        number.textContent = dayNumber;
+
+        cell.appendChild(number);
+
+
+        /*
+            Find recurring events
+        */
+
+        const dayEvents =
+            recurringEvents[date.getDay()] || [];
+
+
+        /*
+            Find special events
+        */
+
+        const dateKey =
+            getDateKey(year, month + 1, dayNumber);
+
+        const special =
+            specialEvents[dateKey] || [];
+
+
+        const events =
+            [...dayEvents, ...special];
+
+
+        /*
+            Show event indicators
+        */
+
+        events.slice(0, 2).forEach(function(event) {
+
+            const dot =
+                document.createElement("span");
+
+            dot.className = "event-dot";
+
+            dot.textContent = event.title;
+
+            cell.appendChild(dot);
+
+        });
+
+
+        if (events.length > 2) {
+
+            const more =
+                document.createElement("span");
+
+            more.className = "event-dot";
+
+            more.textContent =
+                "+" + (events.length - 2) + " more";
+
+            cell.appendChild(more);
+
+        }
+
+
+        /*
+            Click date
+        */
+
+        cell.onclick = function() {
+
+            showEvents(
+                date,
+                events
+            );
+
+        };
+
+
+        days.appendChild(cell);
+
+    }
+
+}
+
+
+/*
+    ========================================
+    SHOW EVENTS
+    ========================================
+*/
+
+function showEvents(date, events) {
+
+    const panel =
+        document.getElementById("eventPanel");
+
+    panel.innerHTML = "";
+
+
+    const heading =
+        document.createElement("div");
+
+    heading.className = "event-date";
+
+    heading.textContent =
+        date.toLocaleString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+        });
+
+    panel.appendChild(heading);
+
+
+    if (events.length === 0) {
+
+        const none =
+            document.createElement("div");
+
+        none.className = "no-events";
+
+        none.textContent =
+            "No scheduled Republic events.";
+
+        panel.appendChild(none);
+
+    }
+    else {
+
+        events.forEach(function(event) {
+
+            const eventBox =
+                document.createElement("div");
+
+            eventBox.className = "event";
+
+
+            const title =
+                document.createElement("div");
+
+            title.className = "event-title";
+
+            title.textContent =
+                event.title;
+
+
+            const time =
+                document.createElement("div");
+
+            time.className = "event-time";
+
+            time.textContent =
+                event.time;
+
+
+            eventBox.appendChild(title);
+
+            eventBox.appendChild(time);
+
+            panel.appendChild(eventBox);
+
+        });
+
+    }
+
+
+    panel.classList.add("active");
+
+}
+
+
+/*
+    ========================================
+    CHANGE MONTH
+    ========================================
+*/
+
+function changeMonth(amount) {
+
+    currentDate.setMonth(
+        currentDate.getMonth() + amount
+    );
+
+    buildCalendar();
+
+    document
+        .getElementById("eventPanel")
+        .classList.remove("active");
+
+}
+
+
+/*
+    ========================================
+    DATE KEY
+    ========================================
+*/
+
+function getDateKey(year, month, day) {
+
+    return (
+        year + "-" +
+        String(month).padStart(2, "0") + "-" +
+        String(day).padStart(2, "0")
+    );
+
+}
+
+
+/*
+    ========================================
+    START
+    ========================================
+*/
+
+buildCalendar();
+
+</script>
+
+</body>
+</html>

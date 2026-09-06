@@ -152,6 +152,103 @@
     .no-events {
         color: #c8e3e8;
     }
+    /* ========================================
+   RESPONSIVE CALENDAR
+   ======================================== */
+
+@media (max-width: 500px) {
+
+    body {
+        padding: 6px;
+    }
+
+    .calendar-title {
+        font-size: 18px;
+    }
+
+    .calendar-controls {
+        gap: 4px;
+    }
+
+    button {
+        padding: 5px 7px;
+        font-size: 13px;
+    }
+
+    .month-name {
+        font-size: 16px;
+    }
+
+    .day {
+        min-height: 52px;
+        padding: 4px;
+    }
+
+    .weekday {
+        font-size: 11px;
+        padding: 5px 1px;
+    }
+
+    .day-number {
+        font-size: 13px;
+    }
+
+    .event-dot {
+        font-size: 10px;
+    }
+
+}
+
+
+@media (max-width: 380px) {
+
+    .calendar-title {
+        font-size: 16px;
+    }
+
+    .calendar-controls {
+        gap: 2px;
+    }
+
+    button {
+        padding: 4px 5px;
+        font-size: 12px;
+    }
+
+    .month-name {
+        font-size: 14px;
+    }
+
+    .day {
+        min-height: 45px;
+        padding: 3px;
+    }
+
+    .weekday {
+        font-size: 10px;
+    }
+
+    .day-number {
+        font-size: 12px;
+    }
+
+    /*
+       On very narrow screens, only show
+       the first part of an event indicator.
+       The full event is still available
+       when the date is clicked.
+    */
+
+    .event-dot {
+        font-size: 0;
+    }
+
+    .event-dot::before {
+        content: "•";
+        font-size: 15px;
+    }
+
+}
 </style>
 </head>
 
@@ -199,38 +296,258 @@ let currentDate = new Date();
 
 /*
     ========================================
-    REPUBLIC RECURRING EVENTS
+    REPUBLIC EVENT DATABASE
     ========================================
-*/
 
-const recurringEvents = {
+    All events are stored by exact date.
 
-    5: [
-        {
-            title: "🧩 Puzzle Friday",
-            time: "All day"
-        }
-    ],
+    Format:
 
-    6: [
+    "YYYY-MM-DD": [
         {
-            title: "📖 Opening Academy Saturday",
-            time: "All day"
-        },
-        {
-            title: "♟ Saturday Knight Swiss",
-            time: "7:00 PM CST"
-        }
-    ],
-
-    0: [
-        {
-            title: "⚔️ Tactics and Endgame Sunday",
-            time: "All day"
+            title: "Event name",
+            time: "Event time",
+            link: "Event URL"
         }
     ]
 
+    Multiple events can exist on the
+    same date.
+*/
+
+
+const eventDatabase = {};
+
+
+/*
+    ========================================
+    EVENT INFORMATION
+    ========================================
+*/
+
+const eventPatterns = {
+
+    puzzleFriday: {
+        title: "🧩 Puzzle Friday",
+        time: "All day",
+        link: "https://example.com"
+    },
+
+    openingAcademy: {
+        title: "📖 Opening Academy Saturday",
+        time: "All day",
+        link: ""
+    },
+
+    saturdayKnightSwiss: {
+        title: "♟ Saturday Knight Swiss",
+        time: "7:00 PM CST",
+        link: ""
+    },
+
+    tacticsEndgameSunday: {
+        title: "⚔️ Tactics and Endgame Sunday",
+        time: "All day",
+        link: ""
+    }
+
 };
+/*
+    ========================================
+    DATABASE DIRECTORY
+    ========================================
+
+    Each date can override the automatically
+    generated event information.
+
+    You only need to put something here when
+    a date needs to be different.
+
+*/
+
+const databaseDirectory = {
+
+    
+    "2026-09-18": {
+        puzzleFriday: {
+            link: "https://microsoft.com/"
+        }
+    }
+
+    
+
+};
+
+/*
+    ========================================
+    ADD EVENT
+    ========================================
+*/
+
+function addEvent(date, event) {
+
+    if (!eventDatabase[date]) {
+        eventDatabase[date] = [];
+    }
+
+    eventDatabase[date].push({
+        title: event.title,
+        time: event.time,
+        link: event.link
+    });
+
+}
+
+
+/*
+    ========================================
+    GENERATE CURRENT SCHEDULE
+    ========================================
+
+    September 1, 2026
+    through
+    December 31, 2026
+
+*/
+
+function generateRepublicSchedule() {
+
+    const start =
+        new Date(2026, 8, 1);
+
+    const end =
+        new Date(2026, 11, 31);
+
+
+    for (
+        let date = new Date(start);
+        date <= end;
+        date.setDate(date.getDate() + 1)
+    ) {
+
+        const dayOfWeek =
+            date.getDay();
+
+        const dateKey =
+            getDateKey(
+                date.getFullYear(),
+                date.getMonth() + 1,
+                date.getDate()
+            );
+
+
+        /*
+            Make sure this date exists
+            in the database.
+        */
+
+        eventDatabase[dateKey] = [];
+
+
+        /*
+            Friday
+        */
+
+        if (dayOfWeek === 5) {
+
+            addDatabaseEvent(
+                dateKey,
+                "puzzleFriday"
+            );
+
+        }
+
+
+        /*
+            Saturday
+        */
+
+        if (dayOfWeek === 6) {
+
+            addDatabaseEvent(
+                dateKey,
+                "openingAcademy"
+            );
+
+            addDatabaseEvent(
+                dateKey,
+                "saturdayKnightSwiss"
+            );
+
+        }
+
+
+        /*
+            Sunday
+        */
+
+        if (dayOfWeek === 0) {
+
+            addDatabaseEvent(
+                dateKey,
+                "tacticsEndgameSunday"
+            );
+
+        }
+
+    }
+
+}function addDatabaseEvent(dateKey, eventType) {
+
+    const pattern =
+        eventPatterns[eventType];
+
+
+    /*
+        Copy the recurring pattern into
+        this specific date.
+    */
+
+    const event = {
+
+        type: eventType,
+
+        title: pattern.title,
+
+        time: pattern.time,
+
+        link: pattern.link
+
+    };
+
+
+    /*
+        Check whether this specific date
+        has an override.
+    */
+
+    if (
+        databaseDirectory[dateKey] &&
+        databaseDirectory[dateKey][eventType]
+    ) {
+
+        const override =
+            databaseDirectory[dateKey][eventType];
+
+
+        if (override.title !== undefined) {
+            event.title = override.title;
+        }
+
+        if (override.time !== undefined) {
+            event.time = override.time;
+        }
+
+        if (override.link !== undefined) {
+            event.link = override.link;
+        }
+
+    }
+
+
+    eventDatabase[dateKey].push(event);
+
+}
 
 
 /*
@@ -238,18 +555,71 @@ const recurringEvents = {
     SPECIAL EVENTS
     ========================================
 
-    We'll use this later for things such as:
+    Put one-off events here.
 
-    "50 Members Celebration"
-    "Republic Anniversary"
-    "Special Vote Chess"
-    etc.
+    These are added AFTER the regular
+    schedule, so a date can contain both
+    regular and special events.
 
 */
 
 const specialEvents = {
 
+    /*
+    Example:
+
+    "2026-10-31": [
+        {
+            title: "🎃 Republic Halloween Event",
+            time: "7:00 PM CST",
+            link: "https://example.com"
+        }
+    ]
+
+    */
+
 };
+
+
+/*
+    Add special events to database
+*/
+
+Object.keys(specialEvents).forEach(function(date) {
+
+    specialEvents[date].forEach(function(event) {
+
+        addEvent(date, event);
+
+    });
+
+});
+
+
+/*
+    Generate the regular schedule.
+*/
+
+/*
+    Generate the regular schedule first.
+*/
+
+generateRepublicSchedule();
+
+
+/*
+    Then add special events.
+*/
+
+Object.keys(specialEvents).forEach(function(date) {
+
+    specialEvents[date].forEach(function(event) {
+
+        addEvent(date, event);
+
+    });
+
+});
 
 
 /*
@@ -338,32 +708,15 @@ function buildCalendar() {
         cell.appendChild(number);
 
 
-        /*
-            Find recurring events
-        */
-
-        const dayEvents =
-            recurringEvents[date.getDay()] || [];
-
-
-        /*
-            Find special events
-        */
-
         const dateKey =
-            getDateKey(year, month + 1, dayNumber);
+    getDateKey(
+        year,
+        month + 1,
+        dayNumber
+    );
 
-        const special =
-            specialEvents[dateKey] || [];
-
-
-        const events =
-            [...dayEvents, ...special];
-
-
-        /*
-            Show event indicators
-        */
+const events =
+    eventDatabase[dateKey] || [];
 
         events.slice(0, 2).forEach(function(event) {
 
@@ -468,27 +821,42 @@ function showEvents(date, events) {
             eventBox.className = "event";
 
 
-            const title =
-                document.createElement("div");
+const title =
+    document.createElement(
+        event.link ? "a" : "div"
+    );
 
-            title.className = "event-title";
+title.className = "event-title";
 
-            title.textContent =
-                event.title;
-
-
-            const time =
-                document.createElement("div");
-
-            time.className = "event-time";
-
-            time.textContent =
-                event.time;
+title.textContent =
+    event.title;
 
 
-            eventBox.appendChild(title);
+if (event.link) {
 
-            eventBox.appendChild(time);
+    title.href = event.link;
+
+    title.target = "_blank";
+
+    title.style.color = "white";
+
+    title.style.textDecoration = "none";
+
+}
+
+
+const time =
+    document.createElement("div");
+
+time.className = "event-time";
+
+time.textContent =
+    event.time;
+
+
+eventBox.appendChild(title);
+
+eventBox.appendChild(time);
 
             panel.appendChild(eventBox);
 
